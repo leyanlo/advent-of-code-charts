@@ -229,7 +229,11 @@
             }
         }
 
-        return 0;
+        return b.local_score - a.local_score;
+    }
+
+    function memberByLocalScoreSorter(a, b) {
+        return b.local_score - a.local_score;
     }
 
     function getCacheKey() {
@@ -250,6 +254,15 @@
     function clearCache() {
         console.log("Clearing cache", getCacheKey());
         localStorage.setItem(getCacheKey(), null);
+    }
+
+    function toggleShowAll() {
+        localStorage.setItem("aoc-flag-v1-show-all", !isShowAllToggled());
+        location.reload();
+    }
+
+    function isShowAllToggled() {
+        return !!JSON.parse(localStorage.getItem("aoc-flag-v1-show-all"));
     }
 
     function toggleResponsiveness() {
@@ -398,6 +411,17 @@
             cacheBustLink.style.border = `1px solid ${aocColors.secondary}`;
             cacheBustLink.addEventListener("click", () => clearCache());
 
+            const showAllToggleLink = this.controls.appendChild(document.createElement("a"));
+            showAllToggleLink.innerText = (isShowAllToggled() ? "✅" : "❌") + " Show All";
+            showAllToggleLink.title = "Show all players";
+            showAllToggleLink.style.cursor = "pointer";
+            showAllToggleLink.style.background = aocColors.tertiary;
+            showAllToggleLink.style.display = "inline-block";
+            showAllToggleLink.style.padding = "2px 8px";
+            showAllToggleLink.style.border = `1px solid ${aocColors.secondary}`;
+            showAllToggleLink.style.marginLeft = "8px";
+            showAllToggleLink.addEventListener("click", () => toggleShowAll());
+
             const responsiveToggleLink = this.controls.appendChild(document.createElement("a"));
             responsiveToggleLink.innerText = (isResponsivenessToggled() ? "✅" : "❌") + " Responsive > 1800px";
             responsiveToggleLink.title = "Trigger side-by-side graphs if the viewport is wider than 1800px";
@@ -427,7 +451,11 @@
             const medalHtml = n => n === 0 ? "🥇" : n === 1 ? "🥈" : n === 2 ? "🥉" : `${n}`;
             const medalColor = n => n === 0 ? "gold" : n === 1 ? "silver" : n === 2 ? "#945210" : "rgba(15, 15, 35, 1.0)";
 
-            this.medals.title = "For each day, the top 3 to get the second star are shown. Behind each medal you can get a glimpse of the podium for the *first* star.";
+            this.medals.title =
+              (isShowAllToggled()
+                ? ''
+                : 'For each day, the top 3 to get the second star are shown. ') +
+              'Behind each medal you can get a glimpse of the podium for the *first* star.';
             let titleElement = this.medals.appendChild(document.createElement("h3"));
             titleElement.innerText = "Podium per day";
             titleElement.style.fontFamily = "Helvetica, Arial, sans-serif";
@@ -456,7 +484,9 @@
                 td.align = "center";
             }
 
-            for (let member of grid.sort(memberByPodiumSorter)) {
+            for (let member of grid.sort(
+              isShowAllToggled() ? memberByLocalScoreSorter : memberByPodiumSorter
+            )) {
                 let tr = document.createElement("tr");
                 let medalCount = 0;
 
@@ -522,7 +552,7 @@
                     td.align = "center";
                 }
 
-                if (medalCount > 0) {
+                if (isShowAllToggled() || medalCount > 0) {
                     gridElement.appendChild(tr);
                 }
             }
